@@ -1,9 +1,12 @@
 import enum
 import databases
 import sqlalchemy
+from typing import Optional
+from datetime import datetime
 from decouple import config
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from fastapi import FastAPI, Request
+from email_validator import validate_email as validate_e, EmailNotValidError
 
 # Mine is this, please change for your credentials
 # DATABASE_URL = "postgresql://postgres:ines123@localhost:5433/store"
@@ -59,6 +62,7 @@ users = sqlalchemy.Table(
     ),
 )
 
+
 class ColorEnum(enum.Enum):
     pink = "pink"
     black = "black"
@@ -94,9 +98,32 @@ clothes = sqlalchemy.Table(
 )
 
 
+class EmailField(str):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v) -> str:
+        try:
+            validate_e(v)
+            return v
+        except EmailNotValidError:
+            raise ValueError("Email is not valid!")
+
+
 class BaseUser(BaseModel):
-    email: str
+    # email: str
+    email: EmailField
     full_name: str
+
+    # @validator('email')
+    # def validate_email(cls, v):
+    #     try:
+    #         validate_e(v)
+    #         return v
+    #     except EmailNotValidError:
+    #         raise ValueError("Email is not valid!")
 
 
 class UserSignIn(BaseUser):
