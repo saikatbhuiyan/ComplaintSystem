@@ -6,6 +6,7 @@ from datetime import datetime
 from decouple import config
 from pydantic import BaseModel, validator
 from fastapi import FastAPI, Request
+from passlib.context import CryptContext
 from email_validator import validate_email as validate_e, EmailNotValidError
 
 # Mine is this, please change for your credentials
@@ -130,10 +131,17 @@ class UserSignIn(BaseUser):
     password: str
 
 
+class UserSignOut(BaseUser):
+    phone: Optional[str]
+    created_at: datetime
+    last_modified_at: datetime
+
+
 # engine = sqlalchemy.create_engine(DATABASE_URL)
 # metadata.create_all(engine)
 
 app = FastAPI()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @app.on_event("startup")
@@ -146,11 +154,13 @@ async def shutdown():
     await database.disconnect()
 
 
-@app.post("/register", status_code=201)
+@app.post("/register", status_code=201, response_model=UserSignOut)
 async def create_user(user: UserSignIn):
+    user.password = pwd_context.hash(user.password)
     q = users.insert().values(**user.dict())
     id_ = await database.execute(q)
-    return
+    user = await database.fetch_one(users.select().where(users.c.id == id_))
+    return user
 
 
 @app.get("/books/")
