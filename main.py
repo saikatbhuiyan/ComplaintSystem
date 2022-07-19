@@ -1,12 +1,14 @@
 import databases
 import sqlalchemy
+from decouple import config
 from fastapi import FastAPI, Request
 
 # Mine is this, please change for your credentials
 # DATABASE_URL = "postgresql://postgres:ines123@localhost:5433/store"
 
 # DATABASE_URL = "postgresql://{place your db user}:{db password}@localhost:{your port}/{db name}"
-DATABASE_URL = "postgresql://postgres:sami1234@localhost:5432/store"
+
+DATABASE_URL = f"postgresql://{config('DB_USER')}:{config('DB_PASSWORD')}@localhost:5432/store"
 
 database = databases.Database(DATABASE_URL)
 
