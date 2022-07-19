@@ -2,6 +2,7 @@ import enum
 import databases
 import sqlalchemy
 from decouple import config
+from pydantic import BaseModel
 from fastapi import FastAPI, Request
 
 # Mine is this, please change for your credentials
@@ -93,6 +94,15 @@ clothes = sqlalchemy.Table(
 )
 
 
+class BaseUser(BaseModel):
+    email: str
+    full_name: str
+
+
+class UserSignIn(BaseUser):
+    password: str
+
+
 # engine = sqlalchemy.create_engine(DATABASE_URL)
 # metadata.create_all(engine)
 
@@ -107,6 +117,13 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     await database.disconnect()
+
+
+@app.post("/register", status_code=201)
+async def create_user(user: UserSignIn):
+    q = users.insert().values(**user.dict())
+    id_ = await database.execute(q)
+    return
 
 
 @app.get("/books/")
@@ -137,3 +154,20 @@ async def read_book(request: Request):
     query = readers_books.insert().values(**data)
     last_record_id = await database.execute(query)
     return {"id": last_record_id}
+
+
+"""
+pip install alembic
+
+alembic init migrations
+
+Need to configure the env.py file:
+from main import metadata
+
+target_metadata = metadata
+
+
+alembic revision --autogenerate -m "initial"
+alembic upgrade head
+
+"""
